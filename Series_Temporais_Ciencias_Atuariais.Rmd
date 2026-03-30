@@ -1,0 +1,70 @@
+---
+title: "Séries Temporais para Ciências Atuariais"
+author: "Marcos R. Gonzaga"
+date: "2026-03-13"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+## Introdução
+
+Este material apresenta conceitos, definições e exemplos práticos sobre a 
+metodologia de séries temporaos applicada às ciências atuariais..
+
+## Séries Temporais (Definição)
+
+Entender Séries Temporais é como aprender a ler o "ritmo" dos dados. Diferente 
+de uma análise convencional onde os dados são independentes, aqui a ordem dos 
+fatores altera (e muito) o produto.
+
+**O Conceito: O que diferencia uma Série Temporal?**
+
+Uma série temporal é um conjunto de observações coletadas em intervalos de tempo
+sucessivos e (geralmente) iguais. 
+O segredo está na *autocorrelação*: o valor de hoje depende, em algum nível, 
+do valor de ontem.
+
+Todo modelo de séries temporais é divido em quatro componentes principais:
+
+**Tendência**: A direção de longo prazo (está subindo ou descendo?).
+
+**Sazonalidade**: Padrões que se repetem em intervalos fixos (ex: vendas de sorvete no verão).
+
+**Ciclo**: Flutuações de longo prazo sem período fixo (ex: ciclos econômicos).
+
+**Ruído (Erro)**: A variação aleatória que não conseguimos explicar.
+
+
+**O modelo na forma geral:**
+
+$$Z_t=T+S+E\hspace{3cm}(1)$$
+
+onde:
+
+-   $Z_t$ é o valor da série em cada ponto do tempo t;
+
+-   $T$ é a tendência (determinística/estocástica) que a série possui ao longo do tempo;
+
+-   $E$ é o resíduo ou o erro aleatório do modelo.
+
+
+# Para começar
+
+**1. Carregue os dados:**
+
+
+data("AirPassengers")
+plot(AirPassengers, main="Passageiros de Linhas Aéreas (1949-1960)", 
+     ylab="Total de Passageiros", xlab="Ano", col="blue")
+
+
+
+
+
+
+

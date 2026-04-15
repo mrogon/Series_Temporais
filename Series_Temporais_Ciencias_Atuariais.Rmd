@@ -1,70 +1,1093 @@
 ---
-title: "Séries Temporais para Ciências Atuariais"
+title: "Introdução às Séries Temporais para Ciências Atuariais"
 author: "Marcos R. Gonzaga"
-date: "2026-03-13"
+date: "2026-04-14"
 output:
-  html_document:
-    df_print: paged
-  pdf_document: default
+html_document:
+encoding: "UTF-8"
+bibliography: referencias.bib
+toc: true
+toc_float: true
+theme: flatly
+highlight: tango
+df_print: paged
+pdf_document: default
+word_document: default
 editor_options:
-  markdown:
-    wrap: 72
+  chunk_output_type: console
+markdown:
+wrap: 72
 ---
 
-## Introdução
+<style>
+body {
+  text-align: justify;
+}
 
-Este material apresenta conceitos, definições e exemplos práticos sobre a 
-metodologia de séries temporaos applicada às ciências atuariais..
+/* Reduz apenas o MathJax que não está em blocos de destaque (display mode) */
+.MathJax:not(.MathJax_Display) {
+  font-size: 0.85em;
+  margin-right: 0.20em; /* Adiciona um pequeno respiro à direita de cada fórmula */
+  margin-left: 0.15em;  /* Adiciona um pequeno respiro à esquerda */
+}
 
-## Séries Temporais (Definição)
+/* Define a largura e centraliza todos os contêineres de dygraphs */
+  .dygraphs-scroll-container {
+    width: 90% !important;   /* Ajuste a porcentagem conforme desejar */
+    height: 350px !important; /* Ajuste a altura fixa desejada */
+    margin: 0 auto !important; /* Centraliza o gráfico na página */
+  }
 
-Entender Séries Temporais é como aprender a ler o "ritmo" dos dados. Diferente 
-de uma análise convencional onde os dados são independentes, aqui a ordem dos 
-fatores altera (e muito) o produto.
+  /* Garante que o widget interno acompanhe o tamanho do contêiner */
+  .html-widget.dygraphs {
+    width: 90% !important;
+    height: 350px !important;
+    margin: 0 auto !important;
+  }
 
+</style>
+
+
+```{r setup, include=FALSE}
+# 1. Definir opções globais para os blocos de código
+knitr::opts_chunk$set(
+  echo = TRUE,          # Mostra o código R no documento final
+  warning = FALSE,       # Esconde avisos (warnings) chatos no PDF/HTML
+  message = FALSE,       # Esconde mensagens de carregamento de pacotes
+  fig.width = 8,         # Define a largura padrão das imagens
+  fig.height = 5         # Define a altura padrão das imagens
+)
+
+Sys.setlocale("LC_ALL", "Portuguese_Brazil.1252")
+
+options(scipen = 999)
+
+# 2. Carregar todas as bibliotecas necessárias de uma vez
+library(dygraphs)
+library(forecast)
+library(ggplot2)
+library(stats)
+library(htmltools)
+
+# Lista com os nomes dos arquivos que estão no seu GitHub
+arquivos <- c("jj.dat.txt", "globtemp.dat.txt", "Maine.dat", "cbe.dat",
+              "Consumo_energia.txt", "tx_desemprego.txt", "cmort.txt")
+
+# Base da URL (o que não muda entre os arquivos)
+base_url <- "https://raw.githubusercontent.com/mrogon/Series_Temporais/refs/heads/Series_Temporais/dados/"
+
+# Criando as URLs completas e lendo os dados
+lista_dados <- lapply(paste0(base_url, arquivos), read.table)
+
+# Dando nomes aos itens da lista para facilitar o acesso
+names(lista_dados) <- c("jj",  "globtemp", "Maine", "cbe", "energia", "desemprego",
+                        "cmort")
+```
+
+### **1. Introdução**
+
+Bem-vindo ao curso de Séries Temporais Aplicadas às Ciências Atuariais. Este material foi estruturado para oferecer uma visão prática e fundamentada sobre como o comportamento de variáveis ao longo do tempo influencia a análise de riscos e a modelagem biométrica e financeira. 
+
+O foco principal desta jornada é a aplicação direta. Exploraremos conceitos essenciais, definições fundamentais e exemplos práticos que fazem parte do cotidiano do atuário.
+
+É importante destacar que trata-se de um conteúdo de nível introdutório, ideal para quem está iniciando os estudos na área. Priorizam-se a compreensão das técnicas e sua utilidade em problemas diversos, sem a pretensão de esgotar as complexas demonstrações matemáticas ou os fundamentos teóricos mais densos.
+
+Para aqueles que desejam dominar o rigor estatístico e as nuances dos cálculos subjacentes, disponibiliza-se uma seção de referências bibliográficas recomendadas ao final de cada módulo.
+
+Ao longo do material, você será guiado pela metodologia de análise, desde a identificação de componentes de uma série (como tendência e sazonalidade) até a aplicação em projeções de sinistralidade, fluxos de caixa e tábuas de mortalidade, por exemplo.
+
+<br>
+
+#### **1.1 Séries Temporais (Definição)**
+
+Entender Séries Temporais é como aprender a ler o "ritmo" dos dados. Diferente de uma análise convencional onde os dados são independentes, aqui a ordem dos fatores altera (e muito) o produto.
+
+<br>
 **O Conceito: O que diferencia uma Série Temporal?**
 
-Uma série temporal é um conjunto de observações coletadas em intervalos de tempo
-sucessivos e (geralmente) iguais. 
-O segredo está na *autocorrelação*: o valor de hoje depende, em algum nível, 
-do valor de ontem.
+Uma série temporal é, grosso modo, um conjunto de observações coletadas em intervalos de tempo sucessivos e (geralmente) iguais. O segredo está na *autocorrelação*: o valor de hoje depende, em algum nível, do valor de ontem. Neste curso, toda série temporal será identificada genericamente por $z_t$.
 
 Todo modelo de séries temporais é divido em quatro componentes principais:
 
-**Tendência**: A direção de longo prazo (está subindo ou descendo?).
+* **Tendência**: A direção de longo prazo (está subindo ou descendo).
 
-**Sazonalidade**: Padrões que se repetem em intervalos fixos (ex: vendas de sorvete no verão).
+* **Sazonalidade**: Padrões que se repetem em intervalos fixos (ex: vendas de sorvete no verão).
 
-**Ciclo**: Flutuações de longo prazo sem período fixo (ex: ciclos econômicos).
+* **Ciclo**: Flutuações de longo prazo sem período fixo (ex: ciclos econômicos).
 
-**Ruído (Erro)**: A variação aleatória que não conseguimos explicar.
+* **Ruído (Erro)**: A variação aleatória que não conseguimos explicar.
 
-
+<br>
 **O modelo na forma geral:**
 
-$$Z_t=T+S+E\hspace{3cm}(1)$$
+Podemos escrever $z_t$ como uma soma de três componentes não observáveis (modelo aditivo):
 
+$$\large Z_t=T+S+E\hspace{3cm}(1.1)$$
 onde:
 
 -   $Z_t$ é o valor da série em cada ponto do tempo t;
 
 -   $T$ é a tendência (determinística/estocástica) que a série possui ao longo do tempo;
 
--   $E$ é o resíduo ou o erro aleatório do modelo.
+-   $E$ é o resíduo ou o erro aleatório do modelo que, em geral, trata se de uma sequência aleatória com média zero e variância constate.
+
+Em situações onde o efeito sazonal da série aumenta sua variabilidade na medida em que a tendência aumenta, tem-se um modelo multiplicativo da forma:
+
+$$\large Z_t=T\times S+E\hspace{3cm}(1.2)$$
+As componentes $T_t$ e $S_t$ são, em geral, muito relacionadas no sentido que a tendência exerce influência sobra a sazonalidade por duas razões:
+
+1. Métodos de estimação de $S_t$ podem ser bastante afetados se não levarmos em conta a tendência.
+
+2. A especificação de $S_t$ depende da especificação de $T_t$.
+
+Neste caso, não podemos isolar uma das componentes sem tentar isolar o outra. Nos modelos (1) e (2) estimando-se $T_t$ e $S_t$ e subtraindo de $Z_t$ obtem-se uma estimativa de $a_t$.
+
+<br>
+**CURIOSIDADE**
+<div style="border: 2px solid #2c3e50; padding: 15px; border-radius: 5px;">
+Uma dúvida comum para quem inicia os estudos nesta área é: *o que os modelos de análises de séries temporais trazem de novo em relação aos modelos de análise de regressão*? 
+A resposta reside na estrutura de dependência dos dados. Enquanto a regressão tradicional pressupõe que as observações são independentes, a metodologia de séries temporais reconhece que o passado influencia diretamente o presente. Segundo @shumway2006time, a correlação introduzida pela amostragem de pontos adjacentes no tempo restringe severamente a aplicabilidade de métodos estatísticos convencionais, que se baseiam na suposição de que as observações são independentes e identicamente distribuídas (i.i.d.).
+
+Por exemplo, numa abordagem por *regressão convencional* o atuário tentaria prever o valor dos sinistros baseando-se apenas em variáveis externas, como o número de veículos segurados ou a inflação de peças. Se o modelo ignorar o tempo, ele tratará o volume de sinistros de "Janeiro" como algo totalmente independente de "Dezembro".
+
+Já nunma abordagem por *séries temporais* o atuário percebe que existe uma dependência temporal. Se houve um aumento repentino de sinistros no mês anterior devido a uma enchente ou mudança na política de aceitação, esse efeito "residual" tende a persistir nos meses seguintes. Geralmente, há mais sinistros em períodos de férias (dezembro/janeiro) devido ao maior fluxo de viagens (sazonalidade). Adicionalmente, o custo médio dos reparos pofr aumentar ao longo do tempo. De um modo geral, o valor observado do número de sinistro de hoje é, em parte, uma função do valor observado ontem.
+
+Se utilizarmos uma regressão comum onde os dados são autocorrelacionados, obteremos estimativas de erro padrão subestimadas. Isso leva a intervalos de confiança falsamente precisos e a uma percepção de risco distorcida. Em previdência ou seguros, por exemplo, ignorar a estrutura temporal pode resultar em reservas técnicas insuficientes ou em um apreçamento (*pricing*) inadequado do prêmio.
+</div>
+
+<br>
 
 
-# Para começar
+#### **1.2 A natureza dos dados de séries temporais**
 
-**1. Carregue os dados:**
+Antes de aplicar modelos matemáticos complexos ou algoritmos de previsão, todo analista — e especialmente o atuário — deve se dedicar a investigar a natureza intrínseca dos dados. Este é o primeiro e mais crucial passo de qualquer análise de séries temporais.
+
+O objetivo primordial desta etapa é realizar uma "anatomia" dos dados, decompondo o que parece ser um comportamento aleatório em componentes identificáveis e interpretáveis. Somente ao compreender essas características é que podemos selecionar o modelo adequado para mitigar riscos e projetar cenários futuros.
+
+Para caracterizar uma série, buscamos identificar, numa inspeção visuaL, os componentes que determinam o comportamento da série: Tendência, Sazonalidade e Variabilidade (Ruído). A inspeção visual, muitas vezes negligenciada, revela comportamentos que testes estatísticos isolados podem ocultar, como: *Valores Atípicos* (por exemplo, um sinistro de valor astronômico que pode distorcer a média); *Quebras Estruturais* (mudanças súbitas no comportamento da série devido a alterações na legislação ou pandemias, por exemplo) e *Ciclos* (Flutuações de longo prazo associadas a ciclos econômicos que afetam, por exemplo, a taxa de juros e, consequentemente, o valor presente das obrigações atuariais).
+
+Sem uma compreensão clara dessas características, o risco de "ruído" ser interpretado como "sinal" é alto, levando a modelos que falham justamente nos momentos de maior necessidade de solvência.
+
+<u>OBSERVAÇÃO</u>: a análise gráfica de uma série temporal é útil não somente para identificar padrões e características da série mas, ainda, identificar valores discrepantes ou inconsistentes.
+Tais valores, por vezes, precisam ser desconsiderados ou tratados de forma diferenciada na análise.
+
+<br>
+**Exemplos:**
+
+Os exemplos de análises que seguem se baseiam na visualização gráfica de algumas séries temporais. Procede-se com a análise das característia que definem o comportamente de cada série e que constituem o ponto de parte para qualquer análise descritivas de qualquer séreie temporal.
+
+A Figura 1 mostra os ganhos trimestrais por ação da empresa Johnson & Johnson. São 84 trimestres (21 anos) medidos do primeiro trimestre de 1960 ao último trimestre de 1980. A série apresenta uma tendência gradualmente crescente, com variações que parecem se repetir nos trimestres de cada ano. Outra característica importante é o fato de que a tendência parece crecer exponencialmente, ou seja, uma tendência determinística.
 
 
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 1 - Ganhos trimestrais por ação da empresa Johnson & Johnson
+</p>
+```{r}
+jj <- lista_dados$jj
+jj.ts <- ts(jj, start=1960, frequency=4)
+
+# Gráfico interativo
+dygraph(jj.ts, main = "") %>% 
+  dyRangeSelector(height = 40) %>%               # Adiciona a barra de zoom em baixo
+  dySeries("V1", label = "Ganhos por ação") %>% # Nomeia a série de dados
+  dyOptions(fillGraph = TRUE, fillAlpha = 0.1) %>% # Adiciona uma sombra suave sob a linha
+  dyHighlight(highlightCircleSize = 5,             # Destaca os pontos ao passar o rato
+              highlightSeriesBackgroundAlpha = 0.2,
+              hideOnMouseOut = FALSE)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @shumway2006time.
+</p>
+<br>
+
+A Figura 2 apresenta uma séria de registros de temperatura global. Nota-se uma tendência ascendente (argumento para a hipótese de aquecimento global). Nota-se, ainda, um nivelamento por volta de 1935 com nova tendência de aumento após 1970. Proponentes do aquecimento global arguentam que a tendência apresentada pela série é consequência de interferência humana.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 2 - Registro de temperatura global no planeta (1880-2021)
+</p>
+```{r}
+globtemp <- lista_dados$globtemp
+globtemp.ts <- ts(globtemp, start=1880)
+# Gráfico interativo
+dygraph(globtemp.ts, main = "") %>% 
+  dyRangeSelector(height = 40) %>%               # Adiciona a barra de zoom em baixo
+  dySeries("V1", label = "Temperatura") %>% # Nomeia a série de dados
+  dyOptions(fillGraph = TRUE, fillAlpha = 0.1) %>% # Adiciona uma sombra suave sob a linha
+  dyHighlight(highlightCircleSize = 5,             # Destaca os pontos ao passar o rato
+              highlightSeriesBackgroundAlpha = 0.2,
+              hideOnMouseOut = FALSE)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @shumway2006time).
+</p>
+<br>
+
+A Figura 3 apresenta a série temporal venda mensal de passagens aéreas nos Estados Unidos no período de janeiro de 1949 a dezembro de 1960. Quanto  às características, podemos observar que a série possui uma tendência aproximadamente linear de crescimento com uma variação sazonal anual (clicos que se repetem dentro de cada ano). Isso ocorre porque representa o comportamento das vendas de passagens aéreas nos Estados Unidos no período de janeiro de 1949 a dezembro de 1960, que aumentam no período de junho a agosto e diminuem ao redor de novembro de cada ano. 
+
+Dentre as hipóteses para as causas do comportamento da série, podemos destacar: a) prosperidade 
+econômica, b) disponibilidade de aeronave, c) redução dos preços (competição), d) crescimento 
+populacional e e) ciclos que coincidem com períodos de férias.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 3 - Análise do número mensal de passagens aéreas (1949-1960)
+</p>
+```{r}
 data("AirPassengers")
-plot(AirPassengers, main="Passageiros de Linhas Aéreas (1949-1960)", 
-     ylab="Total de Passageiros", xlab="Ano", col="blue")
+AP = AirPassengers
+
+# Gráfico interativo
+dygraph(AP, main = "") %>% 
+  dyRangeSelector(height = 40) %>%               # Adiciona a barra de zoom em baixo
+  dySeries("V1", label = "Passageiros") %>% # Nomeia a série de dados
+  dyOptions(fillGraph = TRUE, fillAlpha = 0.1) %>% # Adiciona uma sombra suave sob a linha
+  dyHighlight(highlightCircleSize = 5,             # Destaca os pontos ao passar o rato
+              highlightSeriesBackgroundAlpha = 0.2,
+              hideOnMouseOut = FALSE)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @box1976analysis.
+</p>
+<br>
+
+A Figura 4 apresenta a série temporal de variação mensal do IPCA sumulada com base em dados reais no período de 2015 a 2023. A série simulada apresenta uma ausência de tendência. Diferente do índice acumulado, que possui uma tendência de crescimento (não-estacionária), a taxa de variação mensal do IPCA oscila horizontalmente ao redor de uma média. Para o atuário, isso sugere que, no longo prazo, a inflação média tende a se estabilizar. Se houvesse uma tendência de alta na variação (aceleração inflacionária), as reservas técnicas indexadas poderiam sofrer um descasamento severo (risco de base). A série não apresenta padrões sazonais repetitivos. Entretanto, em situações reais o IPCA pode apresentar uma leve sazonalidade em função, por exemplo, de aumentos eno mês de janeiro devido a mensalidades escolares. Neste série simulada de variação mensal do IPCA, os picos e vales ocorrem de forma aleatória. Em modelos reais, se houvesse sazonalidade, o atuário precisaria aplicar ajustes sazonais para não confundir um pico cíclico com uma mudança estrutural no risco. A variabilidade da série é aparentemente consta ao longo do tempo (característica de homocedasticidade). A "nuvem" de pontos mantém uma dispersão similar ao longo de todo o período (2015-2023), concentrando-se entre $0\%$ e $1\%$. 
+
+Ainda sobre a Figura 4, podemos dizer que a volatilidade controlada facilita a construção de intervalos de confiança. Se a variabilidade aumentasse com o tempo (heterocedasticidade), o atuário teria que aumentar as margens de segurança para evitar a insolvência em cenários de estresse, por exemplo.  Sempre que a série atinge um valor extremo (ex: perto de $1\%$), ela tende a retornar para o seu valor média de $0,45\%$ (identifiado pela linha vermelha tracejada) nos meses seguintes.
+
+Em síntese, a série é classificada como *estacionária na média e na variância*, sendo esta uma característica muito importante para aplicação de modelos de previsão que veremos mais à frente.
 
 
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 4 - Variação Mensal do IPCA (%) - Exemplo de Série Estacionária
+</p>
+```{r}
+# Simulação de dados reais baseados no comportamento do IPCA (2015-2023)
+set.seed(123)
+meses <- seq(as.Date("2015-01-01"), as.Date("2023-12-01"), by = "month")
+# Criando uma série com média 0.45% e desvio padrão de 0.25 (comportamento típico do IPCA)
+variacao_ipca <- ts(rnorm(length(meses), mean = 0.45, sd = 0.25), 
+                    start = c(2015, 1), frequency = 12)
+
+# Gráfico interativo
+dygraph(variacao_ipca, main = "") %>%
+  dyAxis("y", label = "Variação Mensal (%)") %>%
+  dySeries("V1", label = "IPCA Mensal", color = "#2c3e50") %>%
+  dyOptions(drawPoints = TRUE, pointSize = 2) %>%
+  dyLimit(mean(variacao_ipca), "Média Histórica", strokePattern = "dashed", color = "red") %>%
+  dyRangeSelector(height = 40)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: Série Simulada.
+</p>
+<br>
 
 
+#### **1.3 Investigando a sazonalidade e a tendência**
+
+Em muitas situações práticas, $z_t$ é uma série temporal que possui algum tipo de tendência. Se removermos a componente de tendência, a série se terna estacionária, ou seja, apresenta variância e média constantes ao longo do tempo. Por vezes, é importante remover a sazonalidade para ter melhor clareza sobre o comportamento da tendência da série. Ou seja, se cresce ou descre com o tempo e se possui algum comportamento determinístico (por exemplo, linear, exponencial, etc.). Também é relevante investigar a sazonilidade sem a componente de tendência. No que segue, são apresentados alguns exemplos de como podemos fazer essa investigação.
+
+O código abaixo, aplicando a função $aggregate$ na série _número mensal de passagens aéreas_, produz o resultado apresentado na Figura 5, que  permite investigar a componente de tendência da série  após a remoção da sazonalidade. A análise do gráfico de linhas sugere que a tendência da série pode não ser estritamente linear, apresentando indícios de um comportamento exponencial.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 5 - Componente de tendência da série número mensal de passagens aéreas (1949-1960)
+</p>
+```{r}
+
+dygraph(aggregate(AP), main = "") %>% 
+  dyRangeSelector(height = 40) %>%               # Adiciona a barra de zoom em baixo
+  dySeries("V1", label = "Passageiros") %>% # Nomeia a série de dados
+  dyOptions(fillGraph = TRUE, fillAlpha = 0.1) %>% # Adiciona uma sombra suave sob a linha
+  dyHighlight(highlightCircleSize = 5,             # Destaca os pontos ao passar o rato
+              highlightSeriesBackgroundAlpha = 0.2,
+              hideOnMouseOut = FALSE)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @box1976analysis.
+</p>
+<br>
+
+
+Já o código **(AP ~ cycle(AP)** permite fazer uma análise dos números de passagens áreas divididos pelos seus ciclos (meses). Ao usarmos esse código dentro da função **boxplot**, tem-se o resultado apresentado na Figura 6, que mostra as distribuições (agrupamento) do volume de passagens aéreas dentro de cada mês do ano.
+
+Complementarmente, os diagramas de caixa (boxplots) dos valores das passagens, discriminados por mês, evidenciam a ciclicidade anual dos dados. Nestes diagramas, a linha horizontal interna às caixas denota a mediana, enquanto a dimensão da caixa representa o intervalo interquartílico (IQR) — medida de dispersão que compreende os 50% centrais da distribuição (diferença entre o terceiro e o primeiro quartil). Observa-se que julho e agosto detêm os maiores valores medianos, acompanhados por uma maior variabilidade de preços nesses períodos. Fundamentalmente, a disposição mensal diagramas permite identificar um padrão sazonal recorrente, ratificando a natureza cíclica da série temporal.
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 6 - Sazonalidade Mensal
+</p>
+```{r}
+boxplot(AP ~ cycle(AP), 
+        names = month.abb, 
+        col = "lightblue", 
+        xlab = "Passagens", 
+        ylab = "Mês",
+        cex.main = 0.9)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @box1976analysis.
+</p>
+<br>
+
+Mesma análise é conduzidas na séries _ganhos trimestrais por ação da empresa Johnson & Johnson_. A Figura 7 apresenta o comportamento da série após removida a componente de sazonalidade. Vizualmente se torna mais evidente, agora, que a série possuiu uma tendência determinística do tipo exponencial.
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 7 - Componente de tendência da série ganhos trimestrais por ação da empresa Johnson & Johnson
+</p>
+```{r}
+jj <- lista_dados$jj
+jj.ts <- ts(jj, start=1960, frequency=4)
+dygraph(aggregate(jj.ts), main = "") %>% 
+  dyRangeSelector(height = 40) %>%               # Adiciona a barra de zoom em baixo
+  dySeries("V1", label = "Ganhos por ação") %>% # Nomeia a série de dados
+  dyOptions(fillGraph = TRUE, fillAlpha = 0.1) %>% # Adiciona uma sombra suave sob a linha
+  dyHighlight(highlightCircleSize = 5,             # Destaca os pontos ao passar o rato
+              highlightSeriesBackgroundAlpha = 0.2,
+              hideOnMouseOut = FALSE)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @shumway2006time.
+</p>
+<br>
+
+Já a Figura 8 apresenta as distribuições (agrupamento) dos ganhos por ação dentro de cada trimestre do ano. O padrão se sazonalidade aqui é menos evidente do que na série anterior, mas ainda assim podemos inferir os ganhos por ação são mais elavados no 3º trimestre e mais baixos no 1º trimestre, com a presença de um valor atípco neste trimestre.
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 8 - Sazonalidade Trimestral
+</p>
+```{r}
+boxplot(jj.ts ~ cycle(jj.ts), 
+        names = c("1º trimestre", "2º trimestre", "3º trimestre", "4º trimestre"), 
+        col = "lightblue", 
+        xlab = "Trimestres", 
+        ylab = "Ganhos por Ação",
+        cex.main = 0.9)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @shumway2006time.
+</p>
+<br>
+
+A Figura 9 apresenta a série _taxa mensal de desemprego no estado do Maine nos Estados Unidos de janeiro de 1996 a agosto de 2006. Este série possuiu um comportamento muito peculiar, pois nota-se uma reversão drástica da tendência entre 2000 e 2001. Séries com esse comportamento apresentam uma característica chamda de quebra estrutural. A quebra estrutural de uma série pode ser entendida, grosso modo, com a perda de estabilidade de um processo ao longo do tempo. Imagine que você está medindo a temperatura de uma sala a cada minuto. De repente, alguém abre uma janela em pleno inverno. A média da temperatura vai despencar e permanecer baixa. Uma quebra estrutural ocorre quando os parâmetros estatísticos de uma série temporal (como a média, a tendência ou a variância) sofrem uma mudança repentina e persistente em um ponto específico do tempo. Não é apenas uma oscilação comum ou um "ruído", é uma mudança no comportamento fundamental da série. As quebras se manifestam, basicamente, de três formas principais:
+
+* **Mudança no Nível (Média)**: a série "salta" para um novo patamar (para cima ou para baixo).
+
+* **Mudança na Inclinação (Tendência)**:  a série crescia a uma taxa e passa a crescer mais rápido, mais devagar ou começa a cair. Comportamento observado na Serie da Figura 9.
+
+* **Mudança na Volatilidade (Variância)**: a série era estável e, subtamente, torna-se muito instável (alta variabilidade).
+
+Até o ponto em que a série teve uma quebra estrutural ela tinha uma tendência descrescente. Após a quebra estrutural, a série apresenta uma tendência crescente até certo ponto, onde parece apresentar certa estabilidade, ou estacionariedade. 
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 9 - Taxa mensal de desemprego no estado do Maine, Estados Unidos (janeiro de 1996 a agosto de 2006)
+</p>
+```{r}
+maine <- lista_dados$Maine
+maine.ts <- ts(maine, start = c(1996, 1), freq = 12)
+
+# Gráfico interativo
+dygraph(maine.ts, 
+        main = "",
+        height = 300, width = "80%") %>% 
+  dyRangeSelector(height = 40) %>%               # Adiciona a barra de zoom em baixo
+  dySeries("V1", label = "Taxa") %>% # Nomeia a série de dados
+  dyOptions(fillGraph = TRUE, fillAlpha = 0.1) %>% # Adiciona uma sombra suave sob a linha
+  dyHighlight(highlightCircleSize = 5,             # Destaca os pontos ao passar o rato
+              highlightSeriesBackgroundAlpha = 0.2,
+              hideOnMouseOut = FALSE)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @cowpertwait2009introductory.
+</p>
+<br>
+
+As Figuras 10 e 11 apresentam a série mensa e as componentes de tendências e sazonalidade que forma extraídas. O padrão anual de comportamento das taxas de desemprego no estado do Maine, no período de janeiro de 1996 a agosto de 2006, fica bastante evidente nos diagramas de caisa da Figura 11.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 10 - Serie Mensal e Tendencia para a taxa mensal de desemprego no estado do Maine
+</p>
+```{r}
+g1 <- dygraph(maine.ts, group = "maine", 
+              main = "<span style='font-size: 14px;'>Série Mensal",
+              height = 300, width = "80%") %>%
+  dySeries("V1", label = "Taxa Desemprego (%)") %>%
+  dyOptions(fillGraph = TRUE, fillAlpha = 0.1)
+
+g2 <- dygraph(aggregate(maine.ts), group = "maine", 
+              main = "<span style='font-size: 14px;'>Tendência",
+              height = 300, width = "80%") %>%
+  dySeries("V1", label = "Média Anual") %>%
+  dyOptions(colors = "red")
+
+browsable(tagList(
+  div(g1, style = "margin-bottom: 20px;"),
+  div(g2, style = "margin-bottom: 20px;")
+))
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @cowpertwait2009introductory.
+</p>
+<br>
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 11 - Sazonalidade para a taxa mensal de desemprego no estado do Maine
+</p>
+```{r}
+boxplot(maine.ts ~ cycle(maine.ts), 
+        col = "lightblue", 
+        main = "Sazonalidade",
+        xlab = "Mes", 
+        ylab = "Taxa Desemprego (%)",
+        cex.main = 0.9)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @cowpertwait2009introductory.
+</p>
+<br>
+
+#### **1.4 Trabalhando com múltiplas séries**
+
+Podemos analisar o comportamente de multiplas séries disponíveis no mesmo período de tempo e com mesma periodicidade. Imagine que este exercício seja como observar o painel de controle de um avião: um único medidor pode até te dar a altitude, mas você só entende o vôo completo ao cruzar a altitude com velocidade, pressão e combustível. De uma forma geral podemos chamar este exercício de análise multivariada ou cointegração (relações de longo prazo). Ou seja, busca-se entender como uma série temporal influencia a outra (Correlação e Causalidade), seja no curto ou no longo prazo. Enquanto a correlação mede um grau de associação entre as séries, a causalidade refere-se a influência ou efeito de coportamento de uma série A numa série B, ou como ambas podem ser afetadas pora uma terceira série C.
+ 
+Ao usar múltiplas séries, você pode construir modelos que buscam compreender como as séries se correlacionam ou como o comportamente de uma afeta o comportamente da outra melhorando, significativamente, o *poder de previsão*. Embora seja um assunto relevante, essa análise multivariada foge do escopo deste curso introdutório.
+
+A Figura 12 apresenta o comportamente de três séries com mesma periodicidade e observadas no mesmo período do tempo (de janeiro de 1958 a dezembro de 1990) na Austrália: a) O fornecimento mensal de eletricidade (milhões de kWh), b) consumo de cerveja (ml), e c) produção à base de chocolate (toneladas).
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 12 - Multiplas Séries: fornecimento mensal de eletricidade, consumo de cerveja e produção de chocolate, Austália (1958-1990)
+</p>
+```{r}
+cbe <- lista_dados$cbe
+
+Elec.ts <- ts(cbe[, 3], start = 1958, freq = 12)
+Beer.ts <- ts(cbe[, 2], start = 1958, freq = 12)
+Choc.ts <- ts(cbe[, 1], start = 1958, freq = 12)
+
+plot(cbind(Elec.ts, Beer.ts, Choc.ts), 
+     main = "Multiplas séries", 
+     xlab = "Mês",  
+     cex.main = 0.9)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @cowpertwait2009introductory.
+</p>
+
+<br>
+
+Podemos usar a função *ts.intersect* para obeter a interseção de duas séries que se sobrepõe no tempo. Na Figura 13 as séries _número mensal de passagens aéreas emitidas_ e _fornecimento mensal de eletricidade_ são apresentadas no período em que elas se sobrepõe. Nota-se um comportamento muito similar entre as séries _número de passageitos por mês_ e _consumo mensal de energia_.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 13 - Interseção das séries número de passageiros e fornecimento mensal de eletricidade (1958 a 1960)
+</p>
+```{r, message=FALSE, warning=FALSE}
+data("AirPassengers")
+AP = AirPassengers
+
+AP.elec <- ts.intersect(AP, Elec.ts)
+
+g1 <- dygraph(AP.elec[,1], 
+              main = "<span style='font-size: 14px;'>Passagens emitidas por mês</span>",
+              height = 300, width = "95%") %>% 
+  dySeries("V1", label = "Passagens") %>%
+  dyAxis("x", label = "Ano / Mês") %>%
+  dyAxis("y", label = "Nº de Passageiros") %>%
+  dyOptions(fillGraph = TRUE, 
+            fillAlpha = 0.1,
+            labelsKMB = TRUE) %>% 
+  dyCSS(textConnection(".dygraph-axis-label-x { margin-top: 10px; } 
+                        .dygraph-axis-label-y { margin-left: -10px; }"))
+
+g2 <- dygraph(AP.elec[,2],
+              main = "<span style='font-size: 14px;'>Consumo mensal de energia</span>",
+              height = 300, width = "95%") %>%
+  dySeries("V1", label = "Consumo") %>%
+  dyAxis("x", label = "Ano / Mês") %>%
+  dyAxis("y", label = "Consumo (kWh)") %>%
+  dyOptions(fillGraph = TRUE, fillAlpha = 0.1, colors = "blue")
+
+library(htmltools)
+browsable(tagList(
+  div(g1, style = "margin-bottom: 20px;"),
+  div(g2, style = "margin-bottom: 20px;")
+))
+```
+
+É possível também pedir um diagrama de dispersão das séries sobrepostas para avaliar graficamente o graou de associaç!ão entre elas, tal como mostrado na Figura 14. Uma linha de regressao linear é traçada (linha vermelha) mostrando um razoável ajuste linear da relação, que também apresenta um coefiente de correlação relativamente elevado $(\rho = 0,88)$.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 14 - Diagrama de dispersão entre as séries número de passageiros e fornecimento mensal de eletricidade (1947 a 1924)
+</p>
+```{r}
+ap <- as.vector(AP.elec[,1])
+elec <- as.vector(AP.elec[,2])
+
+plot(ap, elec,
+     xlab = "Nº mensal de Passageiros",
+     ylab = "Fornecimento mensal de eletricidade")
+
+abline(reg = lm(elec ~ ap), col="red")
+cor(ap, elec)
+```
+
+<br>
+
+#### **1.5 Decomposição de séries**
+
+Nos exemplos anteriores os padrões de tendência e sazonalidade eram evidentes por uma análise gráfica. Para alguns tipos de séries esses padrões não são tão evidentes e precisamos de diferentes métodos de análise. Séries financeiras, por exemplo, costumam sofres “choques” e apresentarem mudanças drásticas em sua tendência, fenômeno denominado “quebra estrutural”.
+
+A função **decompose** no R estima os efeitos de tendência e sazonalidade de séries temporais utilizando o método de média móvel centrada. A função pode ser inserida como argumento na função **plot** para mostrar a série original e as séries decompostas mostrando as componentes de **tendência**, **sazonalidade** e a sério original.
+
+Um argumento importante da função **decompose** é o **type**, que se refere ao tipo de modelo, se aditivo ("additive") ou multiplicativo ("multiplicative").
+
+A Figura 15 apresenta os códigos e o resultado da decomposição da série de taxas mensais de desemprego no estado do Maine, Estados Unidos (janeiro de 1996 a agosto de 2006), apresentada anteriormente nas Figuras 9 e 10. Uma vez que a série apresenta a componente de sazonalidade não aumenta sua viriabilidade ao longo do tempo, aplica-se a decomposição considerando um modelo aditivo. Como a diferença entre um tipo de modelo ou outro se dá pelo comportamento da variabilidade da séries, a decomposição usando um tipo ou outo afeta apenas o termo de resíduo.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 15 - Decomposição estrutural da série taxa mensal de desemprego no estado do Maine
+</p>
+```{r}
+maine <- lista_dados$Maine
+maine.ts <- ts(maine, start = c(1996, 1), freq = 12)
+
+dec <- decompose(maine.ts, type="add")
+plot(dec)
+```
+
+A Figura 16 apresenta os códigos e o resultado da decomposição de uma série cuja estrutura é de um modelo multiplicativo. Trata-se da série _fornecimento mensal de eletricidade_ (milhões de kWh),
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 16 - Decomposição estrutural da série fornecimento mensal de eletricidade  (em milhões de kWh)
+</p>
+```{r}
+cbe <- lista_dados$cbe
+Elec.ts <- ts(cbe[, 3], start = 1958, freq = 12)
+
+dec <- decompose(Elec.ts, type="mult")
+plot(dec)
+```
+
+Se o interese for olhar apenas os componentes de tendência e sazonalidade, uma alternativa é usar os comandos para gerar a Figura 17.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 17 - Componentes de Tendência e Sazonalidade da série fornecimento mensal de eletricidade  (em milhões de kWh)
+</p>
+```{r}
+cbe <- lista_dados$cbe
+Elec.ts <- ts(cbe[, 3], start = 1958, freq = 12)
+
+Elec.decom <- decompose(Elec.ts, type = "mult")
+Trend <- Elec.decom$trend
+Seasonal <- Elec.decom$seasonal
+
+ts.plot(cbind(Trend, Trend * Seasonal), lty = 1:2)
+```
+
+
+<br>
+
+#### **1.6 Estimando a tendência: suavização**
+
+Existem várias formas de estimar a tendência sendo a mais simples quando a tendência é linear. Um procedimento relativamente simples para qualquer tipo de tendência (i.e. não assume qualquer forma especificada) é a *Média Móvel Centrada*. Trata-se da média de um número especificado de valores da série ao redor de cada valor em cada ponto do tempo, exceto do primeiro e último valores. 
+
+<br>
+
+##### **1.6.1 Média Móvel Centrada (MMC)**
+
+A média móvel centrada é uma técnica fundamental para estimar a componente de tendência-ciclo de uma série temporal, especialmente quando há sazonalidade. Diferente da média móvel simples (que olha apenas para o passado), a centrada utiliza janelas que se estendem simetricamente para trás e para frente no tempo.
+
+Seja $\{Z_t\}$ uma série temporal observada. A média móvel de ordem $m$ (denotada por $MA(m)$ ) é definida pela média aritmética da série dentro de uma janela de largura $m$. Para que a estimativa da tendência no instante $t$ seja centrada, os pontos devem estar distribuídos igualmente ao redor de $t$.
+
+Existem dois casos a serem considerados:
+
+**Média Móvel com período ímpar $(m = 2k + 1)$:**
+
+Quando a largura da janela é ímpar, a centralização é direta. A tendência estimada $\hat{T}_t$ é a média do ponto atual, $k$ pontos passados e $k$ pontos futuros:
+
+$$\hat{T}_t = \frac{1}{m} \sum_{j=-k}^{k} Z_{t+j}\hspace{3cm}(1.3)$$
+Exemplo: Se $m=3$, então $k=1$. Logo, $\hat{T}_t = \frac{1}{3}(Z_{t-1} + Z_t + Z_{t+1})$.
+
+**Média Móvel com período par $(m = 2k)$:**
+
+Quando a janela é par (comum em dados trimestrais $m=4$ ou mensais $m=12$), uma média simples resultaria em um valor posicionado entre dois tempos (ex: entre junho e julho). Para centralizar o valor exatamente em um instante $t$, aplicamos uma segunda média móvel de ordem 2 sobre o resultado da primeira.A fórmula da Média Móvel Centrada de ordem $m$ (denotada por $2 \times m$ MA) torna-se:
+
+$$\hat{T}_t = \frac{1}{m} \left[ \frac{1}{2}Z_{t-k} + Z_{t-k+1} + \dots + Z_{t+k-1} + \frac{1}{2}Z_{t+k} \right]\hspace{3cm}(1.4)$$
+Onde os pesos dos extremos são reduzidos à metade para manter a simetria e a soma dos pesos igual a 1.
+
+**CURIOSIDADE**
+<div style="border: 2px solid #2c3e50; padding: 15px; border-radius: 5px;">
+**Como se chega à formula (1.4)?**
+
+Vamos ver como chegamos aos pesos para uma série trimestral ($m=4$).
+
+**Passo 1:** Calculamos a média móvel simples de ordem 4 em dois instantes sucessivos:
+
+* $M_{t-0.5} = \frac{1}{4}(Z_{t-2} + Z_{t-1} + Z_t + Z_{t+1})$
+* $M_{t+0.5} = \frac{1}{4}(Z_{t-1} + Z_t + Z_{t+1} + Z_{t+2})$
+
+Veja que usamos os delocamento de $0.5$ unidade de tempo e não de $1$ unidade inteira. Quando temos um número par de observações ($m=4$), a média aritmética "cai no meio do caminho" entre dois tempos inteiros. Ao se calcular a média de 4 pontos, por exemplo, dos tempos $t=1, 2, 3, 4$, temos:
+
+$\frac{1+2+3+4}{4} = 2.5$
+
+O valor resultante não pertence ao tempo 2 nem ao tempo 3; ele está posicionado exatamente em 2.5.
+
+**Passo 2:** Centramos esses os valores $M_{t-0.5}$ e $M_{t+0.5}$ no instante $t$ tirando a média entre eles:
+
+$$\hat{T}_t = \frac{M_{t-0.5} + M_{t+0.5}}{2}$$
+**Passo 3:** Substituindo e expandindo:
+
+$$\hat{T}_t = \frac{1}{2} \left[ \frac{Z_{t-2} + Z_{t-1} + Z_t + Z_{t+1}}{4} + \frac{Z_{t-1} + Z_t + Z_{t+1} + Z_{t+2}}{4} \right]$$
+$$\hat{T}_t = \frac{\frac{1}{2}Z_{t-2} + Z_{t-1} + Z_t + Z_{t+1} + \frac{1}{2}Z_{t+2}}{4}$$
+Isso resulta em um filtro com pesos $[\frac{1}{8}, \frac{1}{4}, \frac{1}{4}, \frac{1}{4}, \frac{1}{8}]$. Note que $\frac{1}{8} + \frac{1}{4} + \frac{1}{4} + \frac{1}{4} + \frac{1}{8} = 1$.
+</div>
+
+<br>
+
+Os principais objetivos da média móvel centrada são eliminar a sazonalidade e promover uma suavização para melhor vizualização da tendência. O comprimento da média móvel (i.e. seu número de termos) é escolhido de modo a estimar a tendência de modo que, quanto maior o número de termos, maior será a suavização.
+
+As principais limitações do método são: perda de dados nas extremidades e escolha do número ideal de termos em alguns casos. Embora essa ultima limitação não seja uma exclusividade do método de média móvel centrada.
+
+<br>
+
+**Exemplo de aplicação da MMC**
+
+A Figura 18 apresenta o número de óbitos semanais por doenças cardiovasculares observados ao longo de 10 anos. A função **filter** do R base possuiu o argumento **side** que possibilita escolher o tipo de convolução para a média ($1$ para simples ou $2$ para centrada). No exemplo em questão, optou-se por utilizar dois números de termos bem distintos para a média móvel centrada, de modo a visualizar graficamente o impacto do número de termos da média para o grau de suavização. Nota-se, para a série em questão, que definir o grau de suavizaçao ideal não é uma tarefa muito óbvia.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 18 - Suavização pelo método MMC para o número de óbitos semanias por doenças cardiovasculares (10 anos de observação)
+</p>
+```{r}
+morte <- lista_dados$cmort
+morte.ts <- ts(morte)
+t = 1:length(morte.ts)
+# MMC:
+ma5 = filter(morte.ts, sides=2, rep(1,5)/5)
+ma53 = filter(morte.ts, sides=2, rep(1,53)/53)
+# Gráfico:
+plot(t, morte.ts, type="p", ylab="Óbitos semanais", xlab="Semana")
+lines(ma5, col="red", lwd=2)
+lines(ma53, col="blue", lwd=2)
+legend("topright", 
+       legend = c("Óbitos (Obs)", "MMC 5 termos", "MMC 53 termos"), 
+       col = c("black", "red", "blue"), 
+       pch = c(1, NA, NA),           
+       lty = c(NA, 1, 1),           
+       lwd = c(NA, 2, 2),           
+       bty = "n", 
+       cex = 0.8)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @shumway2006time.
+</p>
+
+<br>
+
+##### **1.6.2 Regressão Localmente Ponderada (LOWESS)**
+
+Existem outros métodos de suavização que, assim como a média móvel centrada, tem como objetivo identificar um sinal ou uma tendência subjacente numa série temporal.
+
+Um método bastante utilizado é o LOWESS (Locally Weighted Scatterplot Smoothing). Trata-se de uma técnica poderosa para suavizar dados e identificar tendências não lineares sem assumir que os dados seguem uma forma global (como uma reta ou uma parábola).
+
+A essência do método LOWESS consiste em escolher um certo número de pontos vizinhos ao redor do caminho, de modo que esses pontos vizinhos serão responsáveis por estimar, via regressão, a tendêcia em toda a trajetória da série. Ocorre que em vez de uma única regressão para todos os dados, o LOWESS faz múltiplas regressões locais. Para cada ponto $x_i$ no gráfico o método:
+
+* 1. Seleciona uma vizinhança de pontos ao redor de $x_i$.
+
+* 2. Dá mais importância (peso) aos pontos que estão muito perto de $x_i$ e menos importância aos que estão longe.
+
+* 3. Ajusta uma reta (ou polinômio) a esses pontos ponderados.
+
+* 4. O valor suavizado para $x_i$ é o ponto sobre essa reta ajustada.
+
+<br>
+
+**CURIOSIDADE**
+<div style="border: 2px solid #2c3e50; padding: 15px; border-radius: 5px;">
+**Formalização matemática do método LOWESS?**
+
+Para cada ponto de interesse $x_0$, seguimos as etapas abaixo:
+
+**Passo 1:** Seleção do número de pontos visinhas a regressão (o parâmetro $f$). Escolhe-se uma fração $f$ do número total de pontos. Por exemplo, ee temos 100 pontos e $f = 0.2$, isso implica que usaremos os 20 vizinhos mais próximos de $x_0$. A distância do vizinho mais distante é chamada de $d(x_0)$.
+
+
+**Passo 2:** Atribuição de Pesos para cada ponto vizinho (função tricúbica). Calcula-se o peso $w_i$ para cada vizinho $x_i$ dentro da janela determinada pela fração $f$. A função mais comum é a tricúbica:
+
+$$w_i(x_0) = \left( 1 - \left| \frac{x_i - x_0}{d(x_0)} \right|^3 \right)^3$$
+Se $x_i$ está em cima de $x_0$, o peso é 1 (máximo). Por outro lado, se $x_i$ está no limite da vizinhança, o peso é $0$.
+
+**Passo 3:** Ajusta-se uma Regressão Linear Local Ponderada. Agora, resolve-se um problema de Mínimos Quadrados Ponderados para encontrar os coeficientes $\hat{\beta}_0$ e $\hat{\beta}_1$ que minimizam a soma dos erros ao quadrado, porém influenciados pelos pesos $w_i$:
+
+$$\sum_{i=1}^{k} w_i(x_0) (y_i - (\beta_0 + \beta_1 x_i))^2$$
+**Passo 4:** Obten-se o valor suavizado para o ponto $x_0$ (chamado de $\hat{y}_0$), que é simplesmente o resultado da equação da reta encontrada no passo anterior:
+
+$$\hat{y}_0 = \hat{\beta}_0 + \hat{\beta}_1 x_0$$
+
+O processo se repete para todos os pontos do gráfico até que a linha completa seja formada.
+</div>
+
+<br>
+
+O método LOWESS original tem um passo extra para ignorar outliers (pontos muito fora da curva). Após o primeiro ajuste, o método olha para os resíduos (o erro de cada ponto). Pontos com erros muito grandes recebem um "peso de robustez" menor em uma segunda rodada de cálculos. Isso garante que a linha não seja "puxada" por dados discrepantes.
+
+O método LOWESS tem ao menos duas principais vantagens em relação ao método de média móvel centrada: não perde observações nas estremidadas da série e lida muito bem com outiliers. Pode-se dizer que o método LOWESS é mais poderoso ou robusto. Enquanto a média móvel centrda apenas tira a média dos vizinhos, o LOWESS ajusta uma pequena reta de regressão entre eles, dando mais peso aos pontos que estão mais perto do centro da janela. 
+
+<br>
+
+**Exemplo de aplicação do LOWESS**
+
+Vamos usar a mesma série utilizada para aplicação do método média móvel centrada. A Figura 19 apresenta o código e os diferentes ajustes (suavizações) para o número de óbitos semanais por doenças cardiovasculares observados ao longo de 10 anos.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 19 - Suavização pelo método LOWESS para o número de óbitos semanias por doenças cardiovasculares (10 anos de observação)
+</p>
+```{r}
+morte <- lista_dados$cmort
+morte.ts <- ts(morte)
+t = 1:length(morte.ts)
+
+# Gráfico com LOEWSS:
+plot(t, morte.ts, type="p", ylab="Óbitos semanais", xlab="Semana")
+lines(lowess(morte.ts, f=0.4), col="red", lwd=2)
+lines(lowess(morte.ts, f=0.1), col="blue", lwd=2)
+legend("topright", 
+       legend = c("Óbitos (Obs)", "LOWESS (f=0.4)", "LOWESS (f=0.1)"), 
+       col = c("black", "red", "blue"), 
+       pch = c(1, NA, NA),           
+       lty = c(NA, 1, 1),           
+       lwd = c(NA, 2, 2),           
+       bty = "n", 
+       cex = 0.8)
+```
+<p style="font-size: 12px; text-align: center; color: gray;">
+  Fonte: @shumway2006time.
+</p>
+
+<br>
+
+### **2. Modelos de Suavização Exponencial**
+
+Os modelos de suavização exponencial formam um dos pilares da análise de séries temporais na medida em que permitem decompor o comportamento da série em três componentes: *Nível*, *Tendência* e *Sazonalidade*. Destaca-se o método de Holt-Winters (@holt2004forecasting; @winters1960forecasting), já implemetado como função de base no R e que possui grande aplicabilidade.
+
+<br>
+
+#### **2.1 Suavização Exponencial Simples (SES)**
+
+Indicado para séries estacionárias (sem tendência ou sazonalidade definida), o modelo de Suavização Exponencial Simples estima o nível da série suavizando o ruído:
+
+$$\large L_{t} = \alpha Z_{t} + (1 - \alpha) L_{t-1}\hspace{3cm}(2.1)$$
+Onde:
+
+* $Z_{t}$: Valor observado no tempo $t$.
+
+* $L_{t}$: Nível estimado (suavizado) no tempo $t$.
+
+* $\alpha$: Constante de suavização $(0 \le \alpha \le 1)$.
+
+
+O $\alpha$ reflete o peso dado à observação mais recente. Se $\alpha$ for próximo de 1, o modelo ignora o passado; se for próximo de 0, o modelo é muito lento para reagir a mudança.
+
+<br>
+
+**CURIOSIDADE**
+<div style="border: 2px solid #2c3e50; padding: 15px; border-radius: 5px;">
+**Por que Exponencial?**
+
+Se substituirmos $L_{t-1}$ por sua definição: 
+
+$$L_{t-1} = \alpha Z_{t-1} + (1-\alpha)L_{t-2}$$
+e continuarmos fazendo isso recursivamente, obtemos:
+
+$$L_t = \alpha Z_t + \alpha(1-\alpha)Z_{t-1} + \alpha(1-\alpha)^2Z_{t-2} + \dots$$
+Observe que os pesos $(\alpha, \alpha(1-\alpha), \alpha(1-\alpha)^2,\dots)\hspace{1cm}$ decrescem exponencialmente à medida que os dados ficam mais antigos. Isso significa que o modelo dá muito mais importância ao que aconteceu recentemente do que ao que aconteceu em um passado mais distante, por exemplo.
+</div>
+
+<br>
+
+**Exemplo de aplicação do SES:**
+
+A Figura 20 apresenta uma série simulada que apresenta um comportamente estacionário, ou seja, possui variação constante em torno de uma média constante ao longo do tempo. 
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 20 - Série simulada com comportamento estacionário
+</p>
+```{r}
+set.seed( 1234)
+Zt = ts(runif(100, 10, 15), start = c(1915, 1), frequency = 1)
+plot(Zt, xlab =' tempo')
+```
+
+Todos os modelos de suavização exponencial apresentados aqui estão incluídos na função de base do R chamada **HoltWinters**. A função traz como argumentos a possibilidade de estimação dos parâmetros do modelo completo (com tendência + Sazonalidade), que veremos adiante. Para estimação do parâmetro $\alpha$ do modelo SES utilizando esta função, basta omitir os parâmetros $\beta$ e $\gamma$, que são os parâmetros dos modelos para séries com tendência e sazonalidade, respectivamente. 
+
+O código e o gráfico na Figuira 21 mostram o processo de estimação e previsão da série simulada na Figura 20 mediante aplicação do modelo SES. A série represetada pela linha vermelha resulta da aplicação da fórmula (2.1), considerando a estimativa para o parâmetro $\alpha=0.1016823$. Ou seja, a série estimada por este modelo está dando menor peso para informaçoes recentes $(\alpha)$ e maior peso para informações passadas $(1-\alpha)$. A explicação para este valor estimaddo de $(\alpha)$ está no fato de que a série foi simulada usando uma distribuição uniforme, que replica o comportamento de um _ruído branco uniforme_, cujos valores variam entre 10 e 15. Esse tipo de série é o exemplo perfeito de _estacionariedade pura_ e _independência_. Para este tipo de série, o valor de hoje não diz nada sobre o valor de amanhã (ausência de memória). Ademais, como os dados flutuam aleatoriamente em torno de uma média fixa (12.5), a melhor previsão para o futuro não é o último dado observado, mas sim a média de todos os dados passados. 
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 21 - Estimação e previsão da série simulada Zt pelo modelo SES
+</p>
+```{r}
+modelo <-HoltWinters(Zt, beta = FALSE, gamma = FALSE)
+modelo
+plot(modelo, xlab =' tempo', ylab =' valores observados/ ajustados', main ='',
+     lwd=2)
+# Previsão:
+library(forecast)
+ajuste_prev <- forecast( modelo, h = 10, level = 95)
+plot(ajuste_prev, main ="", xlab =" Tempo", ylab =" Dados")
+```
+
+O processo de estimação pela função **HoltWinters** tenta minimizar o erro de previsão. Se ele desse um peso alto para a informação recente $(\alpha \to 1)$, a linha de ajuste "perseguiria" o ruído (o zigue-zague aleatório da série Zt na Figura 20), aumentando o erro. Ao escolher um $\alpha$ pequeno, o modelo gera uma linha quase reta (a média), que estatisticamente erra menos em uma série puramente aleatória.
+
+Isso nos leva a seguinte pergunta: _em que tipo de série o $\alpha$ será próximo de 1_? O $\alpha$ se aproximará de 1 (dando peso total à informação mais recente) em séries que apresentam o que chamamos de _Passeio Aleatório_ (Random Walk) ou quando há mudanças bruscas e persistentes no nível. O conceito de Passeio Aleatório será explorado mais à frente neste curso, dentro do tópico sobre processos estacionários e não estacionários. Então, existem basicamente duas situações, ou características de uma série, em que o modelo SES vai estimar um valor de $\alpha$ próximo de 1:
+
+* **Séries com _memória_:** quando o valor de hoje é a melhor base para o valor de amanhã. Exemplo: preços de ações ou taxas de câmbio em intervalos curtos.
+
+* **Mudança de patamar:** se uma série está em 10 e, de repente, pula para 50 e se mantém lá (quebra estrutural), um $\alpha$ alto fará o modelo "aprender" rapidamente que o novo normal deve ser em torno de 50.
+
+<br>
+
+#### **2.2 Suavização Exponencial de Holt (SEH)**
+
+Aplicado em séries que apresentam tendência (crescimento ou decréscimo), mas sem sazonalidade. No modelo de Holt, admitimos que a série tem uma _inclinação_ e, por este modelo, o nível da série em cada ponto do tempo é estimado por:
+
+$$\large L_{t} = \alpha Z_{t} + (1 - \alpha)(L_{t-1} + T_{t-1}) \hspace{3cm}(2.2)$$
+Onde $T_{t-1}$ é a tendência estimada no tempo $t-1$.
+
+Note que a estimativa do nível da série no tempo $t$ considera a tendência anterior $T_{t-1}$ para não ficar "atrasada" em relação ao crescimento da série. Assim, fórmula (2.2) atualiza o nível base combinando o dado atual com o que esperávamos (nível anterior + tendência anterior).
+
+Já a tendência é estimada por:
+
+$$\large T_{t} = \beta (L_{t} - L_{t-1}) + (1 - \beta) T_{t-1} \hspace{3cm}(2.3)$$
+
+Onde:
+
+* $\beta$ (beta): Parâmetro de suavização da tendência ($0 \le \beta \le 1$).
+
+* O termo $[L_{t-1} + T_{t-1}]$ representa a previsão do nível para o tempo $t$ feita no tempo $t-1$.
+
+<br>
+
+**CURIOSIDADE**
+<div style="border: 2px solid #2c3e50; padding: 15px; border-radius: 5px;">
+**Entendendo a lógica para as fórmulas 2.2 e 2.3**
+
+**O Nível $L_t$:**
+
+Diferente do modelo SES, aqui a nossa expectativa para o período atual não é apenas o nível anterior $L_{t-1}$, mas sim o nível anterior acrescido da tendência que vínhamos observando $T_{t-1}$:
+
+$$L_t = \alpha Z_t + (1 - \alpha) \underbrace{[L_{t-1} + T_{t-1}]}_{\text{Previsão esperada}}$$
+**A Tendência $T_t$:**
+
+A tendência nada mais é do que a _velocidade_ da série, determinada pela magnitude da sua inclinação (positiva ou negativa) entre dois pontos do tempo. A Figura abaixo exemplica o impacto da diferença $L_{t}-L_{t-1} $ na tendência da série. 
+
+```{r, echo = FALSE}
+# Criando dados para duas retas com inclinações diferentes:
+df_lenta <- data.frame(x = c(1, 2), y = c(10, 12), tipo = "Suave")
+df_rapida <- data.frame(x = c(1, 2), y = c(10, 18), tipo = "Ingreme")
+
+ggplot() +
+  # Reta 1 - Suave (Azul):
+  geom_line(data = df_lenta, aes(x, y), color = "steelblue", size = 1) +
+  geom_point(data = df_lenta, aes(x, y), color = "steelblue", size = 3) +
+  # Reta 2 - Íngreme (Verde):
+  geom_line(data = df_rapida, aes(x, y), color = "darkgreen", size = 1) +
+  geom_point(data = df_rapida, aes(x, y), color = "darkgreen", size = 3) +
+  # Label dos pontos:
+  annotate("text", x = 0.9, y = 11, label = "L(t-1)", color = "black", 
+           hjust = 0, size = 4, fontface = "bold") +
+  annotate("text", x = 1.95, y = 18.7, label = "L(t)", color = "black", 
+           hjust = 0, size = 4, fontface = "bold") +
+  # Base comum para as duas (Linhas horizontal e vertical):
+  annotate("segment", x = 1, xend = 2, y = 10, yend = 10, linetype = "dashed") +
+  annotate("segment", x = 2, xend = 2, y = 10, yend = 18, linetype = "dashed") +
+  # Tendência 1 (Variação pequena):
+  annotate("text", x = 2.13, y = 11, label = "L(t) - L(t-1): \n - Menor variacao do nivel \n - Velocidade mais lenta \n - Menor inclinacao", 
+           color = "steelblue", hjust = 0, size = 3) +
+  # Tendência 2 (Variação grande):
+  annotate("text", x = 2.1, y = 15, label = "L(t) - L(t-1): \n - Maior variacao do nivel \n - Velocidade mais rapida \n - Maior inclinacao", 
+           color = "darkgreen", hjust = 0, size = 3, fontface = "bold") +
+  # Indicação Visual da Variação (Suave e Rapida) - Setas Verticais:
+  annotate("segment", x = 2.1, xend = 2.1, y = 10, yend = 12, 
+           color = "steelblue", size = 0.8, arrow = arrow(ends = "both", length = unit(0.2, "cm"))) +
+    annotate("segment", x = 2.05, xend = 2.05, y = 10, yend = 18, 
+           color = "darkgreen", size = 0.8, arrow = arrow(ends = "both", length = unit(0.2, "cm"))) +
+  # Ajustes de Eixos e Labels
+  scale_x_continuous(breaks = c(1, 2), labels = c("t-1", "t")) +
+  labs(x = "Tempo (t)",
+       y = "Nivel (L)") +
+  theme_minimal() +
+  expand_limits(x = c(0.8, 3), y = c(9, 20))
+```
+
+Pelo exposto na Figura acima, quanto maior a variação vertical, maior será a velocidade de aumento (inclinação) da séire entre $t$ e $t-1$. Ou seja, a velocidade (inclinação ou variação) observada agora é a diferença entre o nível atual e o anterior $(L_t - L_{t-1})$. A mesma lógica ocorre para inclinações ou variações negativas.
+
+A fórmula de Holt suaviza essa velocidade:
+$$T_t = \beta \underbrace{(L_t - L_{t-1})}_{\text{Tendência medida agora}} + (1 - \beta) T_{t-1}$$
+</div>
+
+<br>
+
+**Exemplo de aplicação do SEH:**
+
+Utiliza-se a mesma função do modelo SES (HoltWinters).Porém, agora aciona-se os argumentos $\alpha$ e $\beta$ que representam,respectivamente, os parâmetros de suavização do nével e tendência.
+
+A Figura 22 apresenta a série temporal dada pelo consumo de energia elétrica (Gwh) na Região Sudeste de janeiro de 1979 a janeiro de 2017. Observa-se que a série possui uma tendência crescente aproximadamente linear com uma mudança de patamar (possível quebra estrutural) em meados  do ano 2000. Ao final do período a série parece apresentar uma mudança de inclinação na tendência. A componente de sazonalidade não é muito evidente. Em detrimento isso, vamos considerar que a série é livre da componente de sazonalidade e vamos fazer a previsão considerando do modelo SEH.
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 22 - Consumo de energia elétrica (Gwh) na Região Sudeste (1979 a 2017)
+</p>
+```{r}
+energia <- lista_dados$energia
+consumo <-ts( energia[, 2], start = c( 1979,1), frequency = 12)
+plot( consumo, xlab =' Tempo', ylab =' Consumo de Energia (Gwh)', main ='')
+```
+
+A Figura 23 apresenta o processo e o resultado de estimação e previsão da série consumo de energia elétrica na Região Sudeste mediante aplicação do modelo SEH. Veja que a estimativa para $\alpha$ foi de $0.7368304$, um valor mais próximo de 1, muito provavelmente devido à mudança de patamar (possível quebra estrutura) e/ou mudança de inclinição no perído fina de observação. Note que o valor estimado para $\beta$ foi $0.01102303$, indicando, pelo exposto na fórmula (2.3), indicando que pouco peso deve ser dado à tendência mais recente. 
+
+Pela previsão realizada para 48 meses à frente $(h=48)$ notamos, pelos valores médios previstos, uma  leve atenuação na inclinação da série com uma ampla incerteza na previsão , ao nível de 95% de confiança (área sombreada na cor cinza). Na prática, pelo fato da série ter mudado de patamar no passado e ter mudado sua inclinação mais recentemente, é difícil prever se a tendência da série no futuro vai mudar em defintivo sua inclinação (de positiva para negativa) e permanecer assim indefinidamente. Talvez esses sejam os principais motivos para incertezas muito amplas na previsão 48 meses à frente.
+
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 23 - Estimação e previsão da série consumo de energia elétrica na Região Sudeste
+</p>
+```{r}
+ajuste_holt <- HoltWinters(consumo, gamma = FALSE)
+ajuste_holt
+plot( consumo, xlab =' tempo', ylab =' Valores Observados/ Ajustados', main ='')
+lines( fitted(ajuste_holt)[, 1], lwd = 2, col =' red')
+legend( 1980,20000, c(" Consumo Energia "," Ajuste SEH"), 
+        lwd = c( 1,2), col = c(" black"," red"), bty =' n')
+# Previsão(h=48)
+prev_holt <- forecast( ajuste_holt, h = 48, level = 95)
+plot(prev_holt, xlab =' tempo', ylab =' valores observados/ previstos', main ='')
+```
+
+
+<br>
+
+#### **2.3 Suavização Exponencial de Holt-Winters (SESH)**
+
+O modelo completo permite lidar com as componentes de tendência e sazonalidade conjutamente. Possui aplicabilidade para séries com tendência e ciclos que se repetem (ex: vendas que aumentam todo mês de dezembro).
+
+Existem dois modelos: Aditivo (a sazonalidade é constante) e Multiplicativo (a sazonalidade aumenta conforme a série cresce, o que faz com que a séire tenha um comportamento explosivo). As fórmulas abaixo referem-se ao modelo Aditivo:
+
+*Nível ($L_{t}$):*
+
+$$\large L_{t} = \alpha [Z_{t} - S_{t-m}] + (1 - \alpha) [L_{t-1} + T_{t-1}]$$
+Aqui subtraímos o componente sazonal ($S_{t-m}$) do dado atual para "limpar" a sazonalidade e estimar o nível puro.
+
+*Tendência ($T_{t}$):*
+
+$$\large T_{t} = \beta [L_{t} - L_{t-1}] + (1 - \beta) T_{t-1}$$
+Veja que é Igual ao modelo de Holt anterior.
+
+*Sazonalidade ($S_{t}$):*
+
+$$\large S_{t} = \gamma (Z_{t} - L_{t-1} - T_{t-1}) + (1 - \gamma) S_{t-m} \hspace{3cm}(2.4)$$
+
+Onde:
+
+* $\gamma$ (gama): Parâmetro de suavização sazonal ($0 \le \gamma \le 1$) que é responsável por controlar o quão rápido o modelo aprende o padrão sazonal.
+
+* $m$: Período da sazonalidade (ex: 4 para trimestral, 12 para mensal).
+
+* $S_{t-m}$: O componente sazonal do mesmo período no ciclo anterior.
+
+Na fórmula (2.4) o componente sazonal é isolado ao subtrairmos o nível e a tendência do valor observado da série $Z_{t}$.
+
+No modelo SESH o valor de $\gamma$ determina quanto peso você dá à observação mais recente para estimar o componente sazonal, em contraposição ao que foi observado no mesmo período do ciclo anterior. Um $\gamma$ próximo de $0$ implica em suavização forte, assumindo que o padrão sazonal é muito estável e muda pouco ao longo dos anos, dando mais peso à média histórica dos ciclos passados. Por sua vez, um $\gamma$ próximo de $1$ implica em suavização fraca, assumindo que o padrão sazonal é muito volátil e está mudando rapidamente, dando mais peso ao comportamento do último ciclo.
+
+<br>
+
+**CURIOSIDADE**
+<div style="border: 2px solid #2c3e50; padding: 15px; border-radius: 5px;">
+**Entendendo a lógica da fórmula 2.4**
+
+Aqui o desafio é isolar o efeito do ciclo ou sazonalidade (ex: todo mês de dezembro as vendas sobem).
+
+**O Nível $L_t$:**
+
+Para estimar o nível real, precisamos "limpar" a sazonalidade do dado observado. Por isso, subtraímos $S_{t-m}$ (o efeito sazonal do mesmo período no ano/ciclo anterior):
+
+$$L_t = \alpha \underbrace{(Z_t - S_{t-m})}_{\text{Dado dessazonalizado}} + (1 - \alpha) (L_{t-1} + T_{t-1})$$
+**A Sazonalidade $S_t$:**
+
+A sazonalidade é o que "sobra" do valor da série após retirarmos a estrutura básica (nível e tendência).Se a série fosse perfeita, teríamos $Z_t = L_t + T_t + S_t$. Isolando o $S_t$, temos que a sazonalidade medida hoje é $Z_t - L_t$. No entanto, para evitar que o ruído afete muito o ciclo, usamos a média ponderada com o ciclo anterior ($S_{t-m}$):
+
+$$S_t = \gamma \underbrace{(Z_t - L_t)}_{\text{Sazonalidade medida agora}} + (1 - \gamma) S_{t-m}$$
+</div>
+
+<br>
+
+O modelo de Holt-Winters é o mais indicado em séries que apresentam comportamento sazonal. Trata-se de uma extensão feita por @winters1960forecasting ao modelo proposto por @holt1957forecasting com o objetivo é capturar o efeito sazonal. Igual à proposta anterior, porém com uma equação adicional para a componente de sazonalidade.
+
+O Quadro 1 apresenta um resumo dos dos efeitos dos parâmetros do Suavização Exponencial de Holt-Winters.
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Quadro 1 - Resumo dos Parâmetros dos modelos de suavização exponencial
+</p>
+```{r, echo=FALSE}
+library(knitr)
+
+# Criando o dataframe com os dados
+resumo <- data.frame(
+  Parâmetro = c("$\\alpha$ (Alpha)", "$\\beta$ (Beta)", "$\\gamma$ (Gama)"),
+  Componente = c("Nível", "Tendência", "Sazonalidade"),
+  Efeito = c("Suaviza o valor médio da série.", 
+             "Suaviza a inclinação de crescimento/queda.", 
+             "Suaviza os padrões repetitivos (ciclos).")
+)
+
+# Gerando a tabela formatada
+kable(resumo, 
+      align = "cll",
+      escape = FALSE) # escape = FALSE permite renderizar o LaTeX dentro da tabela
+```
+
+
+<br>
+
+**Exemplo de aplicação do SESH:**
+
+Vamos considerar que a série consumo de energia elétrica (Gwh) na Região Sudeste de janeiro de 1979 a janeiro de 2017, utilizada no exemplo anterior possui a componente de sazonalidade, que foi completamete ignorada no exemplo. Uma simples inspeção da presença dessa componente poderia ser realizada com a análise do diagrama de caicas dos valores da séria em cada mês, como sugerido no tópico 1.3 deste curso. A Figura 24 mostra esse resultado. Nota-se algum padrão de sazonalidade com medianas de consumos de energia mais elevadas no meio e nos extremos de cada ano.
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 24 - Investigando a sazonalidade da série de consumo de energia elétrica (Gwh) na Região Sudeste
+</p>
+```{r}
+boxplot(consumo ~ cycle(consumo), 
+        col = "lightblue", 
+        main = "Sazonalidade",
+        xlab = "Mes", 
+        ylab = "Consumo",
+        cex.main = 0.9)
+```
+
+Tendo por base a constação da presença de sazonalidade na a série de consumo de energia elétrica (Gwh) na Região Sudeste seria necessário levar isso em consideração na aplicação de modelo de suavização para efeitos de estimação e previsão. Ignorar a preseça de um componente pode comprometer a qualidade da estimação e previsão. 
+
+Assim, a Figura 25 mostra o processo de estimação e previsão da série de consumo de energia com a aplicação do modelo SESH, ou seja, considerando a presença da saznonalidade na estrutura da série. Nota-se que os valores dos parâmetros são $\alpha=0.6983442$, $\beta=0.0009622944$ e $\gamma=0.3585297$. Assim como antes, $\alpha$ continua com um valor estimado próximo de $1$ e $\beta$ próximo de zero. Assim como antes, esses valores estimados para $\alpha$ e $\beta$ evidenciam que pouco peso deve ser dado a valores passados e também à tendência mais recente. Por outro lado, o modelo estima um valor para parâmetro $\gamma$ que não deve ser ignorado, pois esse parâmetro indica de deve-se suavizar a sazonalidade adotando um pouco mais de peso à média histórica dos ciclos passados, haja visto que padrão sazonal da série é estável e muda pouco ao longo do tempo. Se compararmos a previsão atual com aquela da Figura X4 notamos que a previsão atual incorpora melhor a estruutra da série na medida em que estimativa pontual não é simplesmente uma linha reta. Nota-se, ainda, que a incerteza sobre valores futuros, até o 48º mês, é menor do que antes, uma vez que a área sombreda na cor cinza na Figura 26 apresenta uma amplitude menor que aquela da Figura 23.
+
+<p style="font-size: 13px; font-weight: bold; color: #666666; text-align: center; margin-top: 30px; margin-bottom: 5px;">
+  Figura 26 - Estimação e previsão da série consumo de energia elétrica na Região Sudeste considerando a presença da componente de sazonalidade
+</p>
+```{r}
+energia <- lista_dados$energia
+consumo <-ts( energia[, 2], start = c( 1979,1), frequency = 12)
+ajuste_holt <- HoltWinters(consumo)
+ajuste_holt
+# Previsão(h=48)
+prev_holt <- forecast( ajuste_holt, h = 48, level = 95)
+plot(prev_holt, xlab =' tempo', ylab =' valores observados/ previstos', main ='')
+```
+
+
+<br>
+
+### **Referências**
 
 
 

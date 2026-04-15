@@ -1,0 +1,132 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Séries Temporais para Ciências Atuariais},
+  pdfauthor={Marcos R. Gonzaga},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Séries Temporais para Ciências Atuariais}
+\author{Marcos R. Gonzaga}
+\date{2026-03-13}
+
+\begin{document}
+\maketitle
+
+\subsection{Introdução}\label{introduuxe7uxe3o}
+
+Este material apresenta conceitos, definições e exemplos práticos sobre
+a metodologia de séries temporaos applicada às ciências atuariais..
+
+\subsection{Séries Temporais
+(Definição)}\label{suxe9ries-temporais-definiuxe7uxe3o}
+
+Entender Séries Temporais é como aprender a ler o ``ritmo'' dos dados.
+Diferente de uma análise convencional onde os dados são independentes,
+aqui a ordem dos fatores altera (e muito) o produto.
+
+\textbf{O Conceito: O que diferencia uma Série Temporal?}
+
+Uma série temporal é um conjunto de observações coletadas em intervalos
+de tempo sucessivos e (geralmente) iguais. O segredo está na
+\emph{autocorrelação}: o valor de hoje depende, em algum nível, do valor
+de ontem.
+
+Todo modelo de séries temporais é divido em quatro componentes
+principais:
+
+\textbf{Tendência}: A direção de longo prazo (está subindo ou
+descendo?).
+
+\textbf{Sazonalidade}: Padrões que se repetem em intervalos fixos (ex:
+vendas de sorvete no verão).
+
+\textbf{Ciclo}: Flutuações de longo prazo sem período fixo (ex: ciclos
+econômicos).
+
+\textbf{Ruído (Erro)}: A variação aleatória que não conseguimos
+explicar.
+
+\textbf{O modelo na forma geral:}
+
+\[Z_t=T+S+E\hspace{3cm}(1)\]
+
+onde:
+
+\begin{itemize}
+\item
+  \(Z_t\) é o valor da série em cada ponto do tempo t;
+\item
+  \(T\) é a tendência (determinística/estocástica) que a série possui ao
+  longo do tempo;
+\item
+  \(E\) é o resíduo ou o erro aleatório do modelo.
+\end{itemize}
+
+\section{Para começar}\label{para-comeuxe7ar}
+
+\textbf{1. Carregue os dados:}
+
+data(``AirPassengers'') plot(AirPassengers, main=``Passageiros de Linhas
+Aéreas (1949-1960)'', ylab=``Total de Passageiros'', xlab=``Ano'',
+col=``blue'')
+
+\end{document}

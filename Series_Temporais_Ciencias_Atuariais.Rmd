@@ -1,7 +1,7 @@
 ---
 title: "Introdução às Séries Temporais para Ciências Atuariais"
-author: "Marcos R. Gonzaga"
-date: "2026-04-18"
+author: "Marcos R. Gonzaga (UFRN)"
+date: "20-04-2026"
 output:
   html_document:
     toc: true

@@ -143,17 +143,18 @@ Ao longo do material, você será guiado pela metodologia de análise, desde a i
 
 Clique no botão abaixo para baixar todos os dados utilizados ao longo deste curso.
 
-
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE}
 library(downloadthis)
 
-download_file(
-  path = "https://github.com/mrogon/Series_Temporais/tree/Series_Temporais/dados",
-  output_name = "dados_series_temporais",
-  button_label = "Baixar Base de Dados",
+url_direta <- "https://github.com/mrogon/Series_Temporais/raw/Series_Temporais/dados.zip"
+
+download_link(
+  link = url_direta,
+  button_label = "Baixar as séries (.zip)",
   button_type = "primary",
   has_icon = TRUE,
-  icon = "fa fa-save"
+  icon = "fa fa-file-archive",
+  self_contained = FALSE
 )
 ```
 
